@@ -1,0 +1,36 @@
+{
+	"name": "surfforecast",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.59.1",
+		"@sveltejs/adapter-auto": "^7.0.0",
+		"@sveltejs/adapter-static": "^3.0.10",
+		"@sveltejs/kit": "^2.50.2",
+		"@sveltejs/vite-plugin-svelte": "^6.2.4",
+		"@types/node": "^25.5.0",
+		"@vitest/ui": "^4.1.2",
+		"jsdom": "^29.0.1",
+		"svelte": "^5.54.0",
+		"svelte-check": "^4.4.2",
+		"typescript": "^5.9.3",
+		"vite": "^7.3.1",
+		"vite-plugin-pwa": "^1.2.0",
+		"vitest": "^4.1.2",
+		"workbox-build": "^7.4.0"
+	},
+	"dependencies": {
+		"chart.js": "^4.5.1",
+		"idb-keyval": "^6.2.2",
+		"svelte-chartjs": "^4.0.1"
+	}
+}
