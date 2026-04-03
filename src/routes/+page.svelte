@@ -3,6 +3,7 @@
 	import NextBestCard from '$components/NextBestCard.svelte';
 	import DayRow from '$components/DayRow.svelte';
 	import { goto } from '$app/navigation';
+	import ClipboardPasteButton from '$components/ClipboardPasteButton.svelte';
 
 	// Group slots by date and compute daily mean score
 	const dailySummaries = $derived.by(() => {
@@ -25,6 +26,8 @@
 </script>
 
 <section>
+	<ClipboardPasteButton />
+
 	{#if $isLoading && !$forecast}
 		<div class="loading-state">Voorspelling laden…</div>
 	{:else if $forecast}
