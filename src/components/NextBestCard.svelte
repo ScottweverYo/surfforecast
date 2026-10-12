@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { NextBestSession } from '$lib/types';
+	import type { NextBestSession, TimeWindow } from '$lib/types';
 
 	let { session }: { session: NextBestSession } = $props();
 
@@ -8,9 +8,19 @@
 			.format(new Date(session.date + 'T12:00:00'))
 	);
 
-	const timeLabel = $derived(
-		`${String(session.startHour).padStart(2, '0')}:00–${String(session.endHour).padStart(2, '0')}:00`
+	const windowLabels: Record<TimeWindow, string> = {
+		morning:   'ochtend',
+		midday:    'vroege middag',
+		afternoon: 'late middag',
+		evening:   'avond'
+	};
+
+	const timeRange = $derived(
+		session.startTime && session.endTime
+			? ` · ${session.startTime} – ${session.endTime}`
+			: ''
 	);
+	const timeLabel = $derived(`${windowLabels[session.window]}${timeRange}`);
 
 	function stars(score: number): string {
 		const full = Math.floor(score);
@@ -22,7 +32,7 @@
 
 <article class="nbs-card card">
 	<div class="nbs-header">
-		<span class="nbs-label">Volgende beste sessie</span>
+		<span class="nbs-label">Volgende beste moment</span>
 		{#if session.confidence === 'reduced'}
 			<span class="confidence-badge">Lage zekerheid</span>
 		{/if}

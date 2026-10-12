@@ -61,10 +61,21 @@ export interface ForecastSlot {
 	dataFetchedAt: string; // ISO 8601
 }
 
+export type TimeWindow = 'morning' | 'midday' | 'afternoon' | 'evening';
+
+export interface DailySummary {
+	date: string;
+	meanScore: number;
+	confidence: Confidence;
+	avgSwellHeight: number; // metres, one decimal
+	avgWindSpeed: number;   // Beaufort integer
+}
+
 export interface NextBestSession {
 	date: string;        // ISO date
-	startHour: number;   // 0–23
-	endHour: number;     // 0–23
+	window: TimeWindow;
+	startTime: string;   // HH:MM — first slot with score ≥ 3.5
+	endTime: string;     // HH:MM — last slot with score ≥ 3.5
 	compositeScore: number;
 	confidence: Confidence;
 	topConditions: [ParameterScore, ParameterScore, ParameterScore];

@@ -3,6 +3,7 @@ import type {
 	Score,
 	ScoringWeights,
 	NextBestSession,
+	TimeWindow,
 	ParameterScore,
 	SessionLog,
 	ModelAccuracy
@@ -52,60 +53,78 @@ export function computeScore(
 	return { composite: Math.round(composite * 2) / 2, parameters, cappedByHeight: false };
 }
 
-export function findNextBestSession(
+const TIME_WINDOWS: { window: TimeWindow; start: number; end: number }[] = [
+	{ window: 'morning',   start: 6,  end: 10 },
+	{ window: 'midday',    start: 10, end: 14 },
+	{ window: 'afternoon', start: 14, end: 18 },
+	{ window: 'evening',   start: 18, end: 21 },
+];
+
+export function findNextBestMoment(
 	slots: ForecastSlot[],
-	now: Date,
-	windowHours = 2
+	now: Date
 ): NextBestSession | null {
 	const nowISO = now.toISOString();
-	const future = slots.filter(
-		(s) => s.timestamp > nowISO && s.swellHeight >= 0.3
-	);
-	if (future.length < windowHours) return null;
-
 	const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 3600 * 1000).toISOString();
 
-	let bestScore = -Infinity;
-	let bestStart = -1;
+	// Collect all (date, window, slots) combinations, then sort chronologically
+	type Candidate = { date: string; window: TimeWindow; daySlots: ForecastSlot[]; score: number };
+	const candidates: Candidate[] = [];
 
-	for (let i = 0; i <= future.length - windowHours; i++) {
-		const window = future.slice(i, i + windowHours);
-		// Check contiguous (1-hour gaps)
-		let contiguous = true;
-		for (let j = 1; j < window.length; j++) {
-			const diff =
-				new Date(window[j].timestamp).getTime() - new Date(window[j - 1].timestamp).getTime();
-			if (diff > 2 * 3600 * 1000) { contiguous = false; break; }
+	for (const { window, start, end } of TIME_WINDOWS) {
+		const windowSlots = slots.filter((s) => {
+			if (s.timestamp <= nowISO) return false;
+			if (s.swellHeight < 0.3) return false;
+			const h = new Date(s.timestamp).getHours();
+			return h >= start && h < end;
+		});
+
+		const byDate = new Map<string, ForecastSlot[]>();
+		for (const s of windowSlots) {
+			const d = s.timestamp.slice(0, 10);
+			if (!byDate.has(d)) byDate.set(d, []);
+			byDate.get(d)!.push(s);
 		}
-		if (!contiguous) continue;
 
-		const mean = window.reduce((s, sl) => s + sl.score.composite, 0) / windowHours;
-		// Prefer standard confidence windows
-		const bonus = window[0].confidence === 'standard' ? 0.01 : 0;
-		if (mean + bonus > bestScore) {
-			bestScore = mean + bonus;
-			bestStart = i;
+		for (const [date, daySlots] of byDate) {
+			if (daySlots.length === 0) continue;
+			const peak = Math.max(...daySlots.map((s) => s.score.composite));
+			const bonus = daySlots[0].confidence === 'standard' ? 0.01 : 0;
+			candidates.push({ date, window, daySlots, score: peak + bonus });
 		}
 	}
 
-	if (bestStart === -1 || bestScore < 2) return null;
+	// Sort by date, then by window order within the day
+	const windowOrder: Record<TimeWindow, number> = { morning: 0, midday: 1, afternoon: 2, evening: 3 };
+	candidates.sort((a, b) =>
+		a.date !== b.date ? a.date.localeCompare(b.date) : windowOrder[a.window] - windowOrder[b.window]
+	);
 
-	const window = future.slice(bestStart, bestStart + windowHours);
-	const best = window.reduce((a, b) => (a.score.composite > b.score.composite ? a : b));
+	// Return the first upcoming window that meets the minimum threshold
+	const pick = candidates.find((c) => c.score >= 3.5);
+	if (!pick) return null; // no green (≥3.5) window found
+
+	const best = pick.daySlots.reduce((a, b) => (a.score.composite > b.score.composite ? a : b));
 	const params = Object.values(best.score.parameters) as ParameterScore[];
 	const topConditions = [...params]
 		.sort((a, b) => b.value - a.value)
 		.slice(0, 3) as [ParameterScore, ParameterScore, ParameterScore];
 
-	const startDate = new Date(window[0].timestamp);
-	const endDate = new Date(window[windowHours - 1].timestamp);
+	const greenSlots = pick.daySlots.filter((s) => s.score.composite >= 3.5);
+	const toHHMM = (iso: string) => {
+		const h = new Date(iso).getHours();
+		return `${String(h).padStart(2, '0')}:00`;
+	};
+	const startTime = toHHMM(greenSlots[0].timestamp);
+	const endTime   = toHHMM(greenSlots[greenSlots.length - 1].timestamp);
 
 	return {
-		date: startDate.toISOString().split('T')[0],
-		startHour: startDate.getUTCHours(),
-		endHour: endDate.getUTCHours() + 1,
-		compositeScore: Math.round(bestScore * 2) / 2,
-		confidence: window[0].timestamp < sevenDaysFromNow ? 'standard' : 'reduced',
+		date: pick.date,
+		window: pick.window,
+		startTime,
+		endTime,
+		compositeScore: Math.round(pick.score * 2) / 2,
+		confidence: pick.date + 'T00:00:00.000Z' < sevenDaysFromNow ? 'standard' : 'reduced',
 		topConditions
 	};
 }

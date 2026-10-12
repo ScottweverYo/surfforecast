@@ -2,24 +2,52 @@
 	import { forecast, isLoading, refresh } from '$lib/stores/forecast';
 	import NextBestCard from '$components/NextBestCard.svelte';
 	import DayRow from '$components/DayRow.svelte';
-	import { goto } from '$app/navigation';
+	import DayDetail from '$components/DayDetail.svelte';
 	import ClipboardPasteButton from '$components/ClipboardPasteButton.svelte';
+	import { slide } from 'svelte/transition';
+	import { msToBft } from '$lib/scoring/parameters';
+	import type { DailySummary } from '$lib/types';
 
-	// Group slots by date and compute daily mean score
-	const dailySummaries = $derived.by(() => {
+	let expandedDate = $state<string | null>(null);
+
+
+	function toggleDay(date: string) {
+		expandedDate = expandedDate === date ? null : date;
+	}
+
+	function slotsForDate(date: string) {
+		return ($forecast?.slots ?? []).filter((s) => s.timestamp.startsWith(date));
+	}
+
+	// Group slots by date and compute daily summary
+	const dailySummaries = $derived.by((): DailySummary[] => {
 		const cache = $forecast;
 		if (!cache) return [];
-		const byDate = new Map<string, { scores: number[]; confidence: 'standard' | 'reduced' }>();
+		const byDate = new Map<string, {
+			scores: number[];
+			swellHeights: number[];
+			windSpeeds: number[];
+			confidence: 'standard' | 'reduced';
+		}>();
 		for (const slot of cache.slots) {
 			const date = slot.timestamp.slice(0, 10);
-			if (!byDate.has(date)) byDate.set(date, { scores: [], confidence: slot.confidence });
-			byDate.get(date)!.scores.push(slot.score.composite);
+			if (!byDate.has(date)) byDate.set(date, { scores: [], swellHeights: [], windSpeeds: [], confidence: slot.confidence });
+			const entry = byDate.get(date)!;
+			entry.scores.push(slot.score.composite);
+			if (slot.swellHeight > 0) entry.swellHeights.push(slot.swellHeight);
+			if (slot.windSpeed > 0) entry.windSpeeds.push(msToBft(slot.windSpeed));
 		}
 		return [...byDate.entries()]
-			.map(([date, { scores, confidence }]) => ({
+			.map(([date, { scores, swellHeights, windSpeeds, confidence }]) => ({
 				date,
 				meanScore: Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 2) / 2,
-				confidence
+				confidence,
+				avgSwellHeight: swellHeights.length
+					? Math.round((swellHeights.reduce((a, b) => a + b, 0) / swellHeights.length) * 10) / 10
+					: 0,
+				avgWindSpeed: windSpeeds.length
+					? Math.round(windSpeeds.reduce((a, b) => a + b, 0) / windSpeeds.length)
+					: 0
 			}))
 			.slice(0, 14);
 	});
@@ -49,12 +77,22 @@
 		<!-- 14-day list -->
 		<div class="day-list" aria-label="14-daagse voorspelling">
 			{#each dailySummaries as day}
-				<DayRow
-					date={day.date}
-					meanScore={day.meanScore}
-					confidence={day.confidence}
-					onclick={() => goto(`/day/${day.date}`)}
-				/>
+				<div class="day-item">
+					<DayRow
+						date={day.date}
+						meanScore={day.meanScore}
+						confidence={day.confidence}
+						avgSwellHeight={day.avgSwellHeight}
+						avgWindSpeed={day.avgWindSpeed}
+						expanded={expandedDate === day.date}
+						onclick={() => toggleDay(day.date)}
+					/>
+					{#if expandedDate === day.date}
+						<div class="day-panel" transition:slide={{ duration: 200 }}>
+							<DayDetail slots={slotsForDate(day.date)} />
+						</div>
+					{/if}
+				</div>
 			{/each}
 		</div>
 	{:else}
@@ -99,6 +137,17 @@
 	.day-list {
 		border-top: 1px solid var(--color-border);
 		border-radius: var(--radius-lg);
+		overflow: hidden;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.day-item {
+		width: 100%;
+		overflow: hidden;
+	}
+
+	.day-panel {
 		overflow: hidden;
 	}
 

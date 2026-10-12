@@ -6,7 +6,7 @@ import {
 	scoreSwellPeriod,
 	scoreTideState
 } from '../../src/lib/scoring/parameters';
-import { computeScore, findNextBestSession, computeModelAccuracy, DEFAULT_WEIGHTS } from '../../src/lib/scoring/index';
+import { computeScore, findNextBestMoment, computeModelAccuracy, DEFAULT_WEIGHTS } from '../../src/lib/scoring/index';
 import type { ForecastSlot, SessionLog } from '../../src/lib/types';
 
 const makeSlot = (overrides: Partial<ForecastSlot> = {}): ForecastSlot => ({
@@ -134,10 +134,10 @@ describe('computeScore', () => {
 	});
 });
 
-describe('findNextBestSession', () => {
+describe('findNextBestMoment', () => {
 	it('returns null when all slots are in the past', () => {
 		const past = [makeSlot({ timestamp: new Date(Date.now() - 7200_000).toISOString() })];
-		expect(findNextBestSession(past as ForecastSlot[], new Date())).toBeNull();
+		expect(findNextBestMoment(past as ForecastSlot[], new Date())).toBeNull();
 	});
 
 	it('returns null when all future slots are flat (Hs < 0.3)', () => {
@@ -145,16 +145,22 @@ describe('findNextBestSession', () => {
 			makeSlot({ timestamp: new Date(Date.now() + (i + 1) * 3600_000).toISOString(), swellHeight: 0.1 })
 		);
 		const scored = flat.map(s => ({ ...s, score: computeScore(s) })) as ForecastSlot[];
-		expect(findNextBestSession(scored, new Date())).toBeNull();
+		expect(findNextBestMoment(scored, new Date())).toBeNull();
 	});
 
-	it('finds a best session from valid future slots', () => {
-		const slots = Array.from({ length: 6 }, (_, i) => {
-			const s = makeSlot({ timestamp: new Date(Date.now() + (i + 1) * 3600_000).toISOString() });
+	it('finds a best moment from valid future slots in a named window', () => {
+		// Build slots at 08:00 tomorrow (within morning window 06–10)
+		const tomorrow8am = new Date();
+		tomorrow8am.setDate(tomorrow8am.getDate() + 1);
+		tomorrow8am.setHours(8, 0, 0, 0);
+		const slots = Array.from({ length: 3 }, (_, i) => {
+			const ts = new Date(tomorrow8am.getTime() + i * 3600_000);
+			const s = makeSlot({ timestamp: ts.toISOString() });
 			return { ...s, score: computeScore(s) } as ForecastSlot;
 		});
-		const result = findNextBestSession(slots, new Date());
+		const result = findNextBestMoment(slots, new Date());
 		expect(result).not.toBeNull();
+		expect(result!.window).toBe('morning');
 		expect(result!.compositeScore).toBeGreaterThanOrEqual(2);
 	});
 });

@@ -2,7 +2,7 @@ import type { ForecastCache, ForecastSlot, DataSourceStatus } from '$lib/types';
 import { fetchMarineData } from './marine';
 import { fetchWindData } from './wind';
 import { fetchTideData } from './tide';
-import { computeScore, findNextBestSession } from '$lib/scoring/index';
+import { computeScore, findNextBestMoment } from '$lib/scoring/index';
 import { isDaylight } from '$lib/solar';
 
 const SEVEN_DAYS_MS = 7 * 24 * 3600 * 1000;
@@ -84,7 +84,7 @@ export async function fetchForecast(): Promise<ForecastCache | null> {
 		location: 'scheveningen',
 		fetchedAt,
 		slots: daylightSlots,
-		nextBestSession: findNextBestSession(daylightSlots, now),
+		nextBestSession: findNextBestMoment(daylightSlots, now),
 		dataSourceStatus: status
 	};
 }

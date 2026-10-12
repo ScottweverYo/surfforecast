@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surfforecast — Visual Concept</title>
+  <style>
+    :root {
+      --bg:      #060e1a;
+      --surface: #0c1e35;
+      --surface2: #112540;
+      --border:  #1a3556;
+      --text:    #e8f4fd;
+      --muted:   #6b96be;
+      --accent:  #0ea5e9;
+      --green:   #22c55e;
+      --yellow:  #eab308;
+      --orange:  #f97316;
+      --red:     #ef4444;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Concept banner ──────────────────────────────────────────── */
+    .concept-banner {
+      background: #130a24;
+      border-bottom: 1px solid rgba(167, 139, 250, 0.2);
+      color: #a78bfa;
+      font-size: 0.6875rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-align: center;
+      padding: 0.5rem 1rem;
+    }
+
+    /* ── Ocean depth background ─────────────────────────────────── */
+    .ocean-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .ocean-bg svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── App shell ─────────────────────────────────────────────── */
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 1rem 3rem;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────── */
+    header {
+      padding: 1.25rem 0 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-left { display: flex; align-items: baseline; gap: 0.625rem; }
+
+    header h1 {
+      font-size: 1.1875rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .location-badge {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .header-actions { display: flex; gap: 0.5rem; }
+
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+
+    /* ── Glass hero card ─────────────────────────────────────────── */
+    .glass-card {
+      background: rgba(7, 18, 38, 0.78);
+      backdrop-filter: blur(28px) saturate(1.5);
+      -webkit-backdrop-filter: blur(28px) saturate(1.5);
+      border: 1px solid rgba(14, 165, 233, 0.28);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow:
+        0 8px 40px rgba(0, 0, 0, 0.55),
+        0 1px 0 rgba(255,255,255,0.04) inset,
+        0 0 0 0.5px rgba(14, 165, 233, 0.08) inset;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtle radial glow top-right */
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: -50px; right: -50px;
+      width: 220px; height: 220px;
+      background: radial-gradient(circle, rgba(14,165,233,0.09) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .nbs-label {
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 0.625rem;
+    }
+
+    .nbs-top { display: flex; justify-content: space-between; align-items: flex-start; }
+
+    .nbs-date {
+      font-size: 1.375rem;
+      font-weight: 800;
+      line-height: 1.15;
+      text-transform: capitalize;
+    }
+
+    .nbs-score-big {
+      font-size: 2.75rem;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--green);
+      letter-spacing: -0.04em;
+      display: flex;
+      align-items: baseline;
+      gap: 0.125rem;
+    }
+
+    .nbs-score-big .denom {
+      font-size: 1rem;
+      font-weight: 400;
+      color: var(--muted);
+      letter-spacing: 0;
+    }
+
+    .nbs-time {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin: 0.25rem 0 0.875rem;
+    }
+
+    .stars-row {
+      display: flex;
+      gap: 0.1875rem;
+      margin-bottom: 0.875rem;
+    }
+
+    .star-icon { width: 18px; height: 18px; }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+    }
+
+    .chip {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.625rem;
+      border-radius: 999px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .chip-green  { background: rgba(34,197,94,0.12);  color: #86efac; border: 1px solid rgba(34,197,94,0.25); }
+    .chip-blue   { background: rgba(14,165,233,0.1);  color: #7dd3fc; border: 1px solid rgba(14,165,233,0.2); }
+    .chip-yellow { background: rgba(234,179,8,0.1);   color: #fde68a; border: 1px solid rgba(234,179,8,0.2); }
+
+    /* ── 14-day list ─────────────────────────────────────────────── */
+    .day-list {
+      border-radius: 0.75rem;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .day-item { overflow: hidden; }
+    .day-item:last-child .day-row { border-bottom: none; }
+
+    .day-row {
+      display: grid;
+      grid-template-columns: 4px 1fr auto auto auto 28px;
+      align-items: center;
+      min-height: 54px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      padding-right: 0.625rem;
+      transition: filter 0.12s;
+      user-select: none;
+      position: relative;
+    }
+
+    .day-row:hover { filter: brightness(1.12); }
+    .day-row:active { filter: brightness(0.95); }
+
+    /* Score band: concept ② */
+    .band-green  { background: linear-gradient(105deg, rgba(34,197,94,0.1) 0%, rgba(12,30,53,0) 55%); }
+    .band-yellow { background: linear-gradient(105deg, rgba(234,179,8,0.09) 0%, rgba(12,30,53,0) 55%); }
+    .band-orange { background: linear-gradient(105deg, rgba(249,115,22,0.09) 0%, rgba(12,30,53,0) 55%); }
+    .band-red    { background: linear-gradient(105deg, rgba(239,68,68,0.08) 0%, rgba(12,30,53,0) 55%); }
+
+    .score-strip {
+      align-self: stretch;
+      width: 4px;
+      border-radius: 0 2px 2px 0;
+    }
+    .strip-green  { background: var(--green); }
+    .strip-yellow { background: var(--yellow); }
+    .strip-orange { background: var(--orange); }
+    .strip-red    { background: var(--red); }
+
+    .day-date-cell {
+      padding: 0 0.375rem 0 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .day-name {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      text-transform: capitalize;
+      color: var(--text);
+    }
+
+    .day-sub {
+      font-size: 0.6875rem;
+      color: var(--muted);
+      text-transform: capitalize;
+    }
+
+    /* Icons cell: concept ④ */
+    .day-icons-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0 0.375rem;
+    }
+
+    /* Sparkline cell: concept ③ */
+    .day-sparkline-cell {
+      width: 68px;
+      padding: 0 0.25rem;
+      line-height: 0;
+    }
+
+    .day-score-cell {
+      font-size: 0.9375rem;
+      font-weight: 700;
+      min-width: 2.75rem;
+      text-align: right;
+      padding: 0 0.375rem;
+    }
+
+    .score-green  { color: var(--green); }
+    .score-yellow { color: var(--yellow); }
+    .score-orange { color: var(--orange); }
+    .score-red    { color: var(--red); }
+
+    .day-chevron {
+      color: var(--muted);
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+    }
+
+    .day-chevron.open { transform: rotate(90deg); }
+
+    /* ── Expanded panel ──────────────────────────────────────────── */
+    .day-panel {
+      background: rgba(6, 14, 26, 0.7);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .chart-section {
+      padding: 0.75rem 0.75rem 0.5rem;
+    }
+
+    .chart-section h4 {
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .hourly-table-wrap { overflow-x: auto; }
+
+    .hourly-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+    .hourly-table th {
+      color: var(--muted);
+      font-weight: 600;
+      padding: 0.375rem 0.625rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .hourly-table td {
+      padding: 0.4rem 0.625rem;
+      border-bottom: 1px solid rgba(26, 53, 86, 0.5);
+      white-space: nowrap;
+    }
+
+    .hourly-table tr:last-child td { border-bottom: none; }
+
+    .td-time { color: var(--muted); }
+    .td-score { font-weight: 700; }
+
+    .confidence-badge {
+      font-size: 0.625rem;
+      background: rgba(30,58,95,0.8);
+      color: var(--muted);
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-left: 0.25rem;
+      vertical-align: middle;
+    }
+
+    /* ── Refresh row ─────────────────────────────────────────────── */
+    .refresh-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding-top: 1rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.5rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.12s;
+    }
+
+    .btn:hover { background: var(--surface2); }
+    .muted-text { color: var(--muted); font-size: 0.75rem; }
+
+    /* ── Concepts legend ─────────────────────────────────────────── */
+    .legend {
+      margin-top: 1.5rem;
+      padding: 0.875rem 1rem;
+      background: rgba(124, 58, 237, 0.06);
+      border: 1px solid rgba(124, 58, 237, 0.15);
+      border-radius: 0.75rem;
+    }
+
+    .legend h3 {
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #a78bfa;
+      font-weight: 700;
+      margin-bottom: 0.625rem;
+    }
+
+    .legend ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4375rem;
+    }
+
+    .legend li {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      display: flex;
+      gap: 0.5rem;
+      line-height: 1.4;
+    }
+
+    .legend .num {
+      color: #c084fc;
+      font-weight: 700;
+      flex-shrink: 0;
+      min-width: 1.25rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="concept-banner">Visual concept exploration — niet de live app</div>
+
+  <!-- Concept ⑤: Ocean depth background -->
+  <div class="ocean-bg" aria-hidden="true">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="glow1" cx="30%" cy="20%" r="50%">
+          <stop offset="0%" stop-color="#0369a1" stop-opacity="0.06"/>
+          <stop offset="100%" stop-color="#060e1a" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="glow2" cx="80%" cy="70%" r="40%">
+          <stop offset="0%" stop-color="#0c4a6e" stop-opacity="0.05"/>
+          <stop offset="100%" stop-color="#060e1a" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1440" height="900" fill="url(#glow1)"/>
+      <rect width="1440" height="900" fill="url(#glow2)"/>
+      <!-- Wave shapes at very low opacity -->
+      <path d="M0 600 C240 540, 480 660, 720 600 C960 540, 1200 660, 1440 600 L1440 900 L0 900Z"
+            fill="rgba(14,165,233,0.025)"/>
+      <path d="M0 680 C200 620, 500 740, 800 680 C1100 620, 1300 740, 1440 700 L1440 900 L0 900Z"
+            fill="rgba(14,165,233,0.02)"/>
+      <path d="M0 760 C300 720, 600 800, 900 760 C1200 720, 1380 790, 1440 770 L1440 900 L0 900Z"
+            fill="rgba(14,165,233,0.015)"/>
+    </svg>
+  </div>
+
+  <div class="app">
+
+    <!-- Header -->
+    <header>
+      <div class="header-left">
+        <h1>Surfforecast</h1>
+        <span class="location-badge">
+          <svg width="10" height="12" viewBox="0 0 10 12" fill="none">
+            <path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 7 5 7s5-3.25 5-7c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z" fill="currentColor"/>
+          </svg>
+          Scheveningen
+        </span>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" title="Instellingen">⚙</button>
+      </div>
+    </header>
+
+    <!-- Concept ①: Glass hero card -->
+    <article class="glass-card">
+      <div class="nbs-label">Volgende beste moment</div>
+      <div class="nbs-top">
+        <div>
+          <div class="nbs-date" id="nbs-date">Zondag 5 april</div>
+          <div class="nbs-time">ochtend · 07:00 – 10:00</div>
+        </div>
+        <div class="nbs-score-big">4.5<span class="denom">/5</span></div>
+      </div>
+      <div class="stars-row" id="stars-row"></div>
+      <div class="chips">
+        <span class="chip chip-green">Deining 1.8m · 13s</span>
+        <span class="chip chip-blue">Offshore ONO</span>
+        <span class="chip chip-yellow">Getij gunstig</span>
+      </div>
+    </article>
+
+    <!-- Concepts ②③④: Day list with score bands, sparklines, icons -->
+    <div class="day-list" id="day-list"></div>
+
+    <div class="refresh-row">
+      <button class="btn">↻ Ververs</button>
+      <span class="muted-text">Bijgewerkt: 08:42</span>
+    </div>
+
+    <!-- Concepts legend -->
+    <div class="legend">
+      <h3>Concepten in dit mockup</h3>
+      <ul>
+        <li><span class="num">①</span> Glass-morphism hero card — backdrop blur, glow, grote score</li>
+        <li><span class="num">②</span> Score-band rijen — kleurgradiënt over volledige breedte</li>
+        <li><span class="num">③</span> Sparkline — mini uurscoregrafiektje per dag</li>
+        <li><span class="num">④</span> Iconen — SVG golfhoogte-bars + windkracht-staven</li>
+        <li><span class="num">⑤</span> Oceaan-diepte achtergrond — SVG golven op low opacity</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <script>
+    // ── Mock data ───────────────────────────────────────────────────
+    const days = [
+      { label: 'za',  sub: '4 apr',  score: 3.5, swell: 1.2, wind: 3, windDir: 'O',   cls: 'green',  conf: false, hours: [1,1,2,2,3,3,4,4,4,3,3,3,3,2,2,2,3,3,4,3,3,2,2,1] },
+      { label: 'zo',  sub: '5 apr',  score: 4.5, swell: 1.8, wind: 2, windDir: 'ONO', cls: 'green',  conf: false, hours: [2,3,4,5,5,5,5,4,4,4,5,5,4,4,3,3,3,4,4,3,3,2,2,2], expanded: true },
+      { label: 'ma',  sub: '6 apr',  score: 1.5, swell: 0.4, wind: 5, windDir: 'ZW',  cls: 'red',    conf: false, hours: [1,1,1,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
+      { label: 'di',  sub: '7 apr',  score: 2.0, swell: 0.8, wind: 4, windDir: 'W',   cls: 'orange', conf: false, hours: [1,1,2,2,2,2,2,2,2,2,2,2,3,3,2,2,2,2,1,1,1,1,1,1] },
+      { label: 'wo',  sub: '8 apr',  score: 3.0, swell: 1.1, wind: 3, windDir: 'NO',  cls: 'yellow', conf: false, hours: [2,2,3,3,3,3,4,4,3,3,3,3,2,2,2,2,2,2,3,3,3,2,2,2] },
+      { label: 'do',  sub: '9 apr',  score: 4.0, swell: 1.6, wind: 2, windDir: 'NNO', cls: 'green',  conf: false, hours: [3,4,4,5,5,5,4,4,4,4,4,4,3,3,4,4,4,4,3,3,2,2,2,1] },
+      { label: 'vr',  sub: '10 apr', score: 2.5, swell: 0.9, wind: 4, windDir: 'ZW',  cls: 'yellow', conf: false, hours: [2,2,2,3,3,3,3,2,2,2,2,2,2,2,3,3,2,2,2,1,1,1,1,1] },
+      { label: 'za',  sub: '11 apr', score: 3.0, swell: 1.3, wind: 3, windDir: 'N',   cls: 'yellow', conf: true,  hours: [2,2,3,3,3,4,4,3,3,3,3,2,2,2,3,3,3,3,2,2,2,1,1,1] },
+      { label: 'zo',  sub: '12 apr', score: 1.0, swell: 0.3, wind: 6, windDir: 'W',   cls: 'red',    conf: true,  hours: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
+      { label: 'ma',  sub: '13 apr', score: 2.0, swell: 0.7, wind: 4, windDir: 'ZW',  cls: 'orange', conf: true,  hours: [1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1] },
+      { label: 'di',  sub: '14 apr', score: 3.5, swell: 1.4, wind: 3, windDir: 'O',   cls: 'green',  conf: true,  hours: [2,2,3,3,4,4,4,4,3,3,3,3,4,4,4,3,3,2,2,2,1,1,1,1] },
+      { label: 'wo',  sub: '15 apr', score: 4.0, swell: 1.7, wind: 2, windDir: 'ONO', cls: 'green',  conf: true,  hours: [3,3,4,4,5,5,5,4,4,4,3,3,3,3,4,4,4,3,3,2,2,2,1,1] },
+      { label: 'do',  sub: '16 apr', score: 2.5, swell: 1.0, wind: 4, windDir: 'W',   cls: 'yellow', conf: true,  hours: [2,2,2,2,3,3,3,3,2,2,2,2,2,2,2,3,3,3,2,2,1,1,1,1] },
+      { label: 'vr',  sub: '17 apr', score: 1.5, swell: 0.5, wind: 5, windDir: 'ZW',  cls: 'red',    conf: true,  hours: [1,1,1,1,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
+    ];
+
+    // Hourly detail for the pre-expanded day (zo 5 apr)
+    const expandedDetail = [
+      { h:  6, swell: 1.6, period: 11, swellDir: 'NW',  wind: 2, windDir: 'ONO', score: 3, cls: 'yellow' },
+      { h:  7, swell: 1.8, period: 12, swellDir: 'NW',  wind: 2, windDir: 'ONO', score: 5, cls: 'green'  },
+      { h:  8, swell: 1.9, period: 13, swellDir: 'NW',  wind: 2, windDir: 'ONO', score: 5, cls: 'green'  },
+      { h:  9, swell: 1.9, period: 13, swellDir: 'NNW', wind: 2, windDir: 'O',   score: 5, cls: 'green'  },
+      { h: 10, swell: 1.8, period: 12, swellDir: 'NNW', wind: 3, windDir: 'O',   score: 4, cls: 'green'  },
+      { h: 11, swell: 1.7, period: 12, swellDir: 'NW',  wind: 3, windDir: 'ONO', score: 4, cls: 'green'  },
+      { h: 12, swell: 1.6, period: 11, swellDir: 'NW',  wind: 3, windDir: 'ONO', score: 4, cls: 'green'  },
+      { h: 13, swell: 1.4, period: 10, swellDir: 'W',   wind: 3, windDir: 'O',   score: 3, cls: 'yellow' },
+      { h: 14, swell: 1.3, period: 10, swellDir: 'W',   wind: 4, windDir: 'ONO', score: 3, cls: 'yellow' },
+      { h: 15, swell: 1.2, period:  9, swellDir: 'W',   wind: 4, windDir: 'O',   score: 2, cls: 'orange' },
+    ];
+
+    // ── Helpers ──────────────────────────────────────────────────────
+    const COLORS = { green: '#22c55e', yellow: '#eab308', orange: '#f97316', red: '#ef4444' };
+
+    function scoreColor(cls) { return COLORS[cls]; }
+
+    // Concept ③: sparkline SVG
+    function sparkline(hours, cls) {
+      const color = scoreColor(cls);
+      const W = 64, H = 22;
+      const pts = hours.map((v, i) => ({
+        x: (i / (hours.length - 1)) * W,
+        y: H - 2 - ((v - 1) / 4) * (H - 5)
+      }));
+      const lineD = pts.map((p, i) => `${i ? 'L' : 'M'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+      const fillD = `${lineD} L ${W} ${H} L 0 ${H} Z`;
+      return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="sg-${cls}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="${color}" stop-opacity="0.03"/>
+          </linearGradient>
+        </defs>
+        <path d="${fillD}" fill="url(#sg-${cls})"/>
+        <path d="${lineD}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>`;
+    }
+
+    // Concept ④: swell height bars
+    function swellIcon(height) {
+      // 3 bars of increasing height, filled to indicate level
+      const lvl = height >= 1.5 ? 3 : height >= 0.8 ? 2 : 1;
+      const bars = [
+        { x: 0, barH: 6,  fullH: 14 },
+        { x: 7, barH: 9,  fullH: 14 },
+        { x: 14, barH: 12, fullH: 14 },
+      ].map((b, i) => {
+        const active = i < lvl;
+        const fill = active ? '#7aa3c8' : 'rgba(107,150,190,0.2)';
+        const y = b.fullH - b.barH;
+        return `<rect x="${b.x}" y="${y}" width="5" height="${b.barH}" rx="1.5" fill="${fill}"/>`;
+      }).join('');
+      return `<svg width="22" height="14" viewBox="0 0 22 14" title="${height.toFixed(1)}m deining">${bars}</svg>`;
+    }
+
+    // Concept ④: wind barbs (horizontal lines = Beaufort)
+    function windIcon(bft) {
+      const color = bft >= 5 ? '#f97316' : bft >= 4 ? '#eab308' : '#7aa3c8';
+      const barWidths = [16, 12, 8];
+      const lines = barWidths.map((w, i) => {
+        const active = i < Math.ceil(bft / 2);
+        const opacity = active ? 1 : 0.18;
+        return `<line x1="0" y1="${i * 5 + 2}" x2="${w}" y2="${i * 5 + 2}" stroke="${color}" stroke-width="2" stroke-linecap="round" opacity="${opacity}"/>`;
+      }).join('');
+      return `<svg width="20" height="14" viewBox="0 0 20 14" title="Bft ${bft} ${''}">${lines}</svg>`;
+    }
+
+    // Hourly bar chart SVG for expanded day
+    function hourlyChart(hours) {
+      const W = 320, H = 52;
+      const barW = W / hours.length;
+      const scoreClasses = ['', 'red', 'orange', 'yellow', 'green', 'green'];
+
+      const bars = hours.map((v, i) => {
+        const barH = Math.max(2, ((v - 1) / 4) * H);
+        const y = H - barH;
+        const fill = COLORS[scoreClasses[v]] || '#ef4444';
+        return `<rect x="${(i * barW + 1).toFixed(1)}" y="${y.toFixed(1)}" width="${(barW - 2).toFixed(1)}" height="${barH.toFixed(1)}" rx="2" fill="${fill}" opacity="0.85"/>`;
+      }).join('');
+
+      // Grid line at score 3
+      const gridY = H - ((3 - 1) / 4) * H;
+      const grid = `<line x1="0" y1="${gridY.toFixed(1)}" x2="${W}" y2="${gridY.toFixed(1)}" stroke="rgba(107,150,190,0.2)" stroke-dasharray="3,3"/>`;
+
+      // Hour labels
+      const labelHours = [0, 6, 12, 18];
+      const labels = labelHours.map(h =>
+        `<text x="${((h / hours.length) * W).toFixed(1)}" y="${H + 14}" fill="#6b96be" font-size="9" font-family="system-ui">${String(h).padStart(2,'0')}:00</text>`
+      ).join('');
+
+      return `<svg width="100%" height="${H + 20}" viewBox="0 0 ${W} ${H + 20}" preserveAspectRatio="none">
+        ${grid}${bars}${labels}
+      </svg>`;
+    }
+
+    // Stars SVG
+    function buildStars(score) {
+      const full = Math.floor(score);
+      const half = score - full >= 0.5;
+      return Array.from({ length: 5 }, (_, i) => {
+        const filled = i < full;
+        const isHalf = !filled && i === full && half;
+        const color = (filled || isHalf) ? '#eab308' : 'rgba(255,255,255,0.12)';
+        if (isHalf) {
+          return `<svg class="star-icon" viewBox="0 0 20 20">
+            <defs><clipPath id="hc"><rect width="10" height="20"/></clipPath></defs>
+            <path d="M10 1l2.39 4.84 5.34.78-3.87 3.77.91 5.32L10 13.27l-4.77 2.51.91-5.32L2.27 6.62l5.34-.78z" fill="rgba(255,255,255,0.12)"/>
+            <path d="M10 1l2.39 4.84 5.34.78-3.87 3.77.91 5.32L10 13.27l-4.77 2.51.91-5.32L2.27 6.62l5.34-.78z" fill="#eab308" clip-path="url(#hc)"/>
+          </svg>`;
+        }
+        return `<svg class="star-icon" viewBox="0 0 20 20">
+          <path d="M10 1l2.39 4.84 5.34.78-3.87 3.77.91 5.32L10 13.27l-4.77 2.51.91-5.32L2.27 6.62l5.34-.78z" fill="${color}"/>
+        </svg>`;
+      }).join('');
+    }
+
+    // ── Render ────────────────────────────────────────────────────────
+    document.getElementById('stars-row').innerHTML = buildStars(4.5);
+
+    let openIdx = 1; // zo 5 apr pre-expanded
+
+    function render() {
+      const list = document.getElementById('day-list');
+      list.innerHTML = days.map((d, i) => {
+        const isOpen = openIdx === i;
+
+        const expandedPanel = isOpen ? `
+          <div class="day-panel">
+            <div class="chart-section">
+              <h4>Uurscores</h4>
+              ${hourlyChart(d.hours)}
+            </div>
+            <div class="hourly-table-wrap">
+              <table class="hourly-table">
+                <thead>
+                  <tr>
+                    <th>Tijd</th>
+                    <th>Golf</th>
+                    <th>Per.</th>
+                    <th>Richting</th>
+                    <th>Wind</th>
+                    <th>Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${expandedDetail.map(row => `
+                    <tr>
+                      <td class="td-time">${String(row.h).padStart(2,'0')}:00</td>
+                      <td>${row.swell.toFixed(1)}m</td>
+                      <td>${row.period}s</td>
+                      <td>${row.swellDir}</td>
+                      <td>Bft ${row.wind} ${row.windDir}</td>
+                      <td class="td-score score-${row.cls}">${row.score.toFixed(1)}★</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ` : '';
+
+        return `
+          <div class="day-item">
+            <div class="day-row band-${d.cls}" data-idx="${i}" role="button" tabindex="0"
+                 aria-expanded="${isOpen}" aria-label="${d.label} ${d.sub}">
+              <div class="score-strip strip-${d.cls}"></div>
+              <div class="day-date-cell">
+                <span class="day-name">${d.label}</span>
+                <span class="day-sub">${d.sub}</span>
+              </div>
+              <div class="day-icons-cell">
+                ${swellIcon(d.swell)}
+                ${windIcon(d.wind)}
+              </div>
+              <div class="day-sparkline-cell">${sparkline(d.hours, d.cls)}</div>
+              <div class="day-score-cell score-${d.cls}">
+                ${d.conf ? '<span class="confidence-badge">7d+</span>' : ''}${d.score.toFixed(1)}
+              </div>
+              <div class="day-chevron${isOpen ? ' open' : ''}">›</div>
+            </div>
+            ${expandedPanel}
+          </div>
+        `;
+      }).join('');
+
+      list.querySelectorAll('.day-row').forEach(row => {
+        const handler = () => {
+          const idx = parseInt(row.dataset.idx);
+          openIdx = openIdx === idx ? -1 : idx;
+          render();
+        };
+        row.addEventListener('click', handler);
+        row.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); }
+        });
+      });
+    }
+
+    render();
+  </script>
+
+</body>
+</html>

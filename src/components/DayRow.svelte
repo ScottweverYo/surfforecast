@@ -3,11 +3,17 @@
 		date,
 		meanScore,
 		confidence,
+		avgSwellHeight = 0,
+		avgWindSpeed = 0,
+		expanded = false,
 		onclick
 	}: {
 		date: string;
 		meanScore: number;
 		confidence: 'standard' | 'reduced';
+		avgSwellHeight?: number;
+		avgWindSpeed?: number;
+		expanded?: boolean;
 		onclick: () => void;
 	} = $props();
 
@@ -39,10 +45,16 @@
 	onclick={onclick}
 	onkeydown={handleKey}
 	aria-label="Bekijk details voor {dateLabel}"
+	aria-expanded={expanded}
 >
 	<div class="score-strip score-strip-{scoreClass}"></div>
 
 	<span class="day-date">{dateLabel}</span>
+
+	<span class="day-meta">
+		<span class="day-swell">{avgSwellHeight > 0 ? avgSwellHeight.toFixed(1) + ' m' : '—'}</span>
+		<span class="day-wind">{avgWindSpeed > 0 ? 'Bft ' + avgWindSpeed : '—'}</span>
+	</span>
 
 	<span class="day-score">
 		{scoreDisplay} ★
@@ -51,7 +63,7 @@
 		{/if}
 	</span>
 
-	<span class="day-chevron" aria-hidden="true">›</span>
+	<span class="day-chevron" aria-hidden="true">{expanded ? '⌄' : '›'}</span>
 </div>
 
 <style>
@@ -85,6 +97,19 @@
 		flex: 1;
 		font-size: 0.9375rem;
 		text-transform: capitalize;
+	}
+
+	.day-meta {
+		display: flex;
+		gap: 0.5rem;
+		font-size: 0.75rem;
+		color: var(--color-muted);
+		white-space: nowrap;
+	}
+
+	.day-swell, .day-wind {
+		min-width: 3rem;
+		text-align: right;
 	}
 
 	.day-score {
